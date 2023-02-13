@@ -13,7 +13,7 @@ from torchvision import utils
 from PIL import Image
 
 SAVE_PER_TIMES = 15
-imsiz = 64
+imsiz = 256
 
 class Generator(torch.nn.Module):
     def __init__(self, channels):
@@ -42,15 +42,15 @@ class Generator(torch.nn.Module):
             nn.BatchNorm2d(num_features=128),
             nn.ReLU(True),
 
-            # # State (128x32x32)
-            # nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=4, stride=2, padding=1),
-            # nn.BatchNorm2d(num_features=128),
-            # nn.ReLU(True),
+            # State (128x32x32)
+            nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.ReLU(True),
 
-            # # State (64x64x64)
-            # nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1),
-            # nn.BatchNorm2d(num_features=64),
-            # nn.ReLU(True),
+            # State (64x64x64)
+            nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(num_features=128),
+            nn.ReLU(True),
 
             # State (64x128x128)
             nn.ConvTranspose2d(in_channels=128, out_channels=channels, kernel_size=4, stride=2, padding=1))
@@ -82,18 +82,18 @@ class Discriminator(torch.nn.Module):
             nn.InstanceNorm2d(128, affine=True),
             nn.LeakyReLU(0.2, inplace=True),
 
-            # # Image (Cx64x64)
-            # nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1),
-            # nn.InstanceNorm2d(256, affine=True),
-            # nn.LeakyReLU(0.2, inplace=True),
+            # Image (Cx64x64)
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(256, affine=True),
+            nn.LeakyReLU(0.2, inplace=True),
 
-            # # Image (Cx32x32)
-            # nn.Conv2d(in_channels=128, out_channels=256, kernel_size=4, stride=2, padding=1),
-            # nn.InstanceNorm2d(256, affine=True),
-            # nn.LeakyReLU(0.2, inplace=True),
+            # Image (Cx32x32)
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=4, stride=2, padding=1),
+            nn.InstanceNorm2d(256, affine=True),
+            nn.LeakyReLU(0.2, inplace=True),
 
             # State (256x16x16)
-            nn.Conv2d(in_channels=128, out_channels=512, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=4, stride=2, padding=1),
             nn.InstanceNorm2d(512, affine=True),
             nn.LeakyReLU(0.2, inplace=True),
 
@@ -299,17 +299,17 @@ class WGAN_GP(object):
         self.load_model(D_model_path, G_model_path)
         z = self.get_torch_variable(torch.randn(self.batch_size, 100, 1, 1))
         samples = self.G(z)
-        print("eval samples shape", samples.shape)
+        # print("eval samples shape", samples.shape)
         samples = samples.mul(0.5).add(0.5)
         samples = samples.data.cpu()
         # print(samples.transpose(2,0,1).shape)
-        print(samples[0].numpy().transpose(1,2,0).shape)
+        # print(samples[0].numpy().transpose(1,2,0).shape)
         # im = Image.fromarray()
-        cv2.imwrite("imagexray.png", samples[0].numpy().transpose(1,2,0))
+        # cv2.imwrite("imagexray.png", samples[0].numpy().transpose(1,2,0))
         # im.save("your_file.png")
-        print(samples.shape)
+        # print(samples.shape)
         grid = utils.make_grid(samples)
-        print(grid.shape)
+        # print(grid.shape)
         print("Grid of 8x8 images saved to 'dgan_model_image.png'.")
         utils.save_image(grid, 'dgan_model_image.png')
 
@@ -353,7 +353,7 @@ class WGAN_GP(object):
 
     def generate_img(self, z, number_of_images):
         samples = self.G(z).data.cpu().numpy()[:number_of_images]
-        print("generate", samples.shape)
+        # print("generate", samples.shape)
         generated_images = []
         for sample in samples:
             if self.C > 1:

@@ -44,7 +44,7 @@ def get_data_loader(args):
         test_dataset = dset.STL10(root=args.dataroot,  split='test', download=args.download, transform=trans)
 
     elif args.dataset == 'JSRT':
-        image_size = 64
+        image_size = 256
         train_dataset = dset.ImageFolder(root=args.dataroot,
                                 transform=transforms.Compose([
                                     transforms.Resize(image_size),

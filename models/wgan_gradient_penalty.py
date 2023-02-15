@@ -6,14 +6,12 @@ from torch import autograd
 import time as t
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
-import cv2
 import os
 from utils.tensorboard_logger import Logger
 from torchvision import utils
 from PIL import Image
 
 SAVE_PER_TIMES = 15
-imsiz = 256
 
 class Generator(torch.nn.Module):
     def __init__(self, channels):
@@ -43,17 +41,17 @@ class Generator(torch.nn.Module):
             nn.ReLU(True),
 
             # State (128x32x32)
-            nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(num_features=128),
+            nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(num_features=64),
             nn.ReLU(True),
 
             # State (64x64x64)
-            nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(num_features=128),
+            nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(num_features=32),
             nn.ReLU(True),
 
             # State (64x128x128)
-            nn.ConvTranspose2d(in_channels=128, out_channels=channels, kernel_size=4, stride=2, padding=1))
+            nn.ConvTranspose2d(in_channels=32, out_channels=channels, kernel_size=4, stride=2, padding=1))
 
         self.output = nn.Tanh()
 
@@ -121,6 +119,7 @@ class Discriminator(torch.nn.Module):
 class WGAN_GP(object):
     def __init__(self, args):
         print("WGAN_GradientPenalty init model.")
+        self.image_size = args.image_size
         self.G = Generator(args.channels)
         self.D = Discriminator(args.channels)
         self.C = args.channels
@@ -129,7 +128,7 @@ class WGAN_GP(object):
         self.check_cuda(args.cuda)
 
         # WGAN values from paper
-        self.learning_rate = 1e-4
+        self.learning_rate = 1e-2
         self.b1 = 0.5
         self.b2 = 0.999
         self.batch_size = args.batch_size
@@ -187,7 +186,8 @@ class WGAN_GP(object):
             Wasserstein_D = 0
             # Train Dicriminator forward-loss-backward-update self.critic_iter times while 1 Generator forward-loss-backward-update
             for d_iter in range(self.critic_iter):
-                # print("training dis")
+
+
                 self.D.zero_grad()
 
                 images = self.data.__next__()
@@ -279,8 +279,8 @@ class WGAN_GP(object):
 
                 # (3) Log the images
                 info = {
-                    'real_images': self.real_images(images, self.number_of_images),
-                    'generated_images': self.generate_img(z, self.number_of_images)
+                    'real_images': self.real_images(images),
+                    'generated_images': self.generate_img(z)
                 }
 
                 for tag, images in info.items():
@@ -299,17 +299,10 @@ class WGAN_GP(object):
         self.load_model(D_model_path, G_model_path)
         z = self.get_torch_variable(torch.randn(self.batch_size, 100, 1, 1))
         samples = self.G(z)
-        # print("eval samples shape", samples.shape)
         samples = samples.mul(0.5).add(0.5)
         samples = samples.data.cpu()
-        # print(samples.transpose(2,0,1).shape)
-        # print(samples[0].numpy().transpose(1,2,0).shape)
-        # im = Image.fromarray()
-        # cv2.imwrite("imagexray.png", samples[0].numpy().transpose(1,2,0))
-        # im.save("your_file.png")
-        # print(samples.shape)
         grid = utils.make_grid(samples)
-        # print(grid.shape)
+        print(grid.shape)
         print("Grid of 8x8 images saved to 'dgan_model_image.png'.")
         utils.save_image(grid, 'dgan_model_image.png')
 
@@ -345,21 +338,21 @@ class WGAN_GP(object):
         grad_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * self.lambda_term
         return grad_penalty
 
-    def real_images(self, images, number_of_images):
+    def real_images(self, images):
         if (self.C > 1):
-            return self.to_np(images.view(-1, self.C, imsiz, imsiz)[:self.number_of_images])
+            return self.to_np(images.view(-1, self.C, self.image_size, self.image_size)[:self.number_of_images])
         else:
-            return self.to_np(images.view(-1,imsiz, imsiz)[:self.number_of_images])
+            return self.to_np(images.view(-1,self.image_size, self.image_size)[:self.number_of_images])
 
-    def generate_img(self, z, number_of_images):
-        samples = self.G(z).data.cpu().numpy()[:number_of_images]
+    def generate_img(self, z):
+        samples = self.G(z).data.cpu().numpy()[:self.number_of_images]
         # print("generate", samples.shape)
         generated_images = []
         for sample in samples:
             if self.C > 1:
-                generated_images.append(sample.reshape(self.C, imsiz, imsiz))
+                generated_images.append(sample.reshape(self.C, self.image_size, self.image_size))
             else:
-                generated_images.append(sample.reshape(imsiz, imsiz))
+                generated_images.append(sample.reshape(self.image_size, self.image_size))
         return generated_images
 
     def to_np(self, x):
@@ -406,7 +399,7 @@ class WGAN_GP(object):
             alpha += alpha
             fake_im = self.G(z_intp)
             fake_im = fake_im.mul(0.5).add(0.5) #denormalize
-            images.append(fake_im.view(self.C,imsiz, imsiz).data.cpu())
+            images.append(fake_im.view(self.C,self.image_size, self.image_size).data.cpu())
 
         grid = utils.make_grid(images, )
         utils.save_image(grid, 'interpolated_images/interpolated_{}.png'.format(str(number).zfill(3)))

@@ -12,6 +12,7 @@ def parse_args():
                             help='The name of dataset')
     parser.add_argument('--download', type=str, default='False')
     parser.add_argument('--epochs', type=int, default=50, help='The number of epochs to run')
+    parser.add_argument('--image_size', type=int, default=256, help='Size of input and generated image')
     parser.add_argument('--channels', type=int, default=3, help='The number of image channels')
     parser.add_argument('--batch_size', type=int, default=64, help='The size of batch')
     parser.add_argument('--cuda',  type=str, default='False', help='Availability of cuda')

@@ -1,6 +1,5 @@
 from utils.config import parse_args
 from utils.data_loader import get_data_loader
-
 from models.gan import GAN
 from models.dcgan import DCGAN_MODEL
 from models.wgan_clipping import WGAN_CP
@@ -20,10 +19,6 @@ def main(args):
     else:
         print("Model type non-existing. Try again.")
         exit(-1)
-
-    # Load datasets to train and test loaders
-    
-    #feature_extraction = FeatureExtractionTest(train_loader, test_loader, args.cuda, args.batch_size)
 
     # Start model training
     if args.is_train == 'True':

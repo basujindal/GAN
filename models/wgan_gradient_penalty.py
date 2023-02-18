@@ -187,13 +187,15 @@ class WGAN_GP(object):
             # Train Dicriminator forward-loss-backward-update self.critic_iter times while 1 Generator forward-loss-backward-update
             for d_iter in range(self.critic_iter):
 
-
                 self.D.zero_grad()
-
                 images = self.data.__next__()
+                # images = torch.zeros((8, 3, 256, 256))
+                # print(images.shape)
                 z = torch.rand((images.shape[0], 100, 1, 1))
 
                 images, z = self.get_torch_variable(images), self.get_torch_variable(z)
+
+                # z = self.get_torch_variable(z)
 
                 # Train discriminator
                 # WGAN - Training discriminator more iterations than generator

@@ -1,8 +1,9 @@
 .python-version
 **__pycache__**
-*.pkl
+# *.pkl
 logs/*
 datasets/*
 training_result_images/
 inception_score_graph.txt
 .vscode/
+test.ipynb

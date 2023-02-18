@@ -15,6 +15,19 @@ python data/GAN/main.py --model WGAN-GP  \
 
 ```
 
+```
+python data/GAN/main.py --model WGAN-GP  \
+                        --is_train False \
+                        --dataset JSRT \
+                        --cuda True \
+                        --batch_size 8 \
+                        --image_size 64 \
+                        --channels 3 \
+                        --load_G /root/generator.pkl \
+                        --load_D /root/discriminator.pkl
+
+```
+
 Start tensorboard:
 
 ```

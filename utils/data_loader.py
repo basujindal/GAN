@@ -1,22 +1,47 @@
 import os
 import numpy as np
 import torch
+from tqdm import tqdm
 import torch.utils.data as data_utils
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 from skimage import io
 from torch.utils.data import Dataset
 from utils.fashion_mnist import MNIST, FashionMNIST
+from torch.utils.data.sampler import SubsetRandomSampler
+
 
 
 class JSRTDataset(Dataset):
 
-    def __init__(self, root, transform=None, maskExt="gif"):
+    def __init__(self, root, imgSize,transform=None, maskExt="gif"):
 
         self.root_dir = root
         self.transform = transform
         self.imgs = os.listdir(os.path.join(root, "Images"))
         self.maskExt = maskExt
+
+        self.final = torch.zeros([len(self.imgs),3, imgSize,imgSize], dtype=torch.float32)
+        for idx in tqdm(range(len(self.imgs))):
+        # for idx in tqdm(range(10)):
+            mask_path = os.path.join(self.root_dir, "Masks", self.imgs[idx][:-3] + self.maskExt)
+            mask = io.imread(mask_path)
+            if len(mask.shape) < 3:
+                mask = np.expand_dims(mask, axis = 2)
+
+            img_path = os.path.join(self.root_dir, "Images", self.imgs[idx])
+            image = io.imread(img_path)
+            if len(mask.shape) < 3:
+                image = np.expand_dims(image, axis = 2)
+
+            if self.transform:
+                image = self.transform(image)
+                mask = self.transform(mask)
+            
+            self.final[idx, 0, :,:] = mask.squeeze(0)
+            self.final[idx,1, :,:] = image.squeeze(0)
+
+        self.final.to("cuda")
 
     def __len__(self):
         return len(self.imgs)
@@ -24,25 +49,10 @@ class JSRTDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-
-        mask_path = os.path.join(self.root_dir, "Masks", self.imgs[idx][:-3] + self.maskExt)
-        mask = io.imread(mask_path)
-        if len(mask.shape) < 3:
-            mask = np.expand_dims(mask, axis = 2)
-
-        img_path = os.path.join(self.root_dir, "Images", self.imgs[idx])
-        image = io.imread(img_path)
-        if len(mask.shape) < 3:
-            image = np.expand_dims(image, axis = 2)
-
-        zer = np.zeros_like(mask)
-
-        if self.transform:
-            image = self.transform(image)
-            mask = self.transform(mask)
-            zer = self.transform(zer)
+       
+        # ret = torch.concatenate((image, mask, zer), axis=0), torch.tensor([1])
         
-        return torch.concatenate((image, mask, zer), axis=0), torch.tensor([1])
+        return self.final[idx], torch.tensor([1])
     
 
 def get_data_loader(args):
@@ -81,7 +91,7 @@ def get_data_loader(args):
 
     elif args.dataset == 'JSRT':
         image_size = args.image_size
-        train_dataset = JSRTDataset(root=args.dataroot,
+        train_dataset = JSRTDataset(root=args.dataroot,imgSize = image_size, 
                                 transform=transforms.Compose([
                                     transforms.ToPILImage(),
                                     transforms.Resize(image_size),
@@ -90,7 +100,6 @@ def get_data_loader(args):
                                 ]), maskExt="png")
     
 
-    # Check if everything is ok with loading datasets
     assert train_dataset
 
     train_dataloader = data_utils.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)

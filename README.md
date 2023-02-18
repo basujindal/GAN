@@ -21,10 +21,10 @@ python data/GAN/main.py --model WGAN-GP  \
                         --dataset JSRT \
                         --cuda True \
                         --batch_size 8 \
-                        --image_size 64 \
+                        --image_size 256 \
                         --channels 3 \
-                        --load_G /root/generator.pkl \
-                        --load_D /root/discriminator.pkl
+                        --load_G /root/data/GAN/generator.pkl \
+                        --load_D /root/data/GAN/discriminator.pkl
 
 ```
 
